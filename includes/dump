@@ -1,0 +1,313 @@
+\begin{figure*}[h]
+    \centering
+    \includegraphics[width=0.9\linewidth]{../figures/api-server-overview.png}
+    \caption{An illustration of the in-vehicle API server. When a client issues a GET request to an API like \texttt{/speed}, the server responds with a speed value received as a CAN signal from a speed estimation application. When it receives a PUT request to an API like \texttt{climate}, the server crafts necessary signals and sends it to a climate control application that operates necessary actuators.}
+    \label{fig:api-gateway}
+\end{figure*}
+
+As illustrated in Figure \ref{fig:api-3demos}, SPAPI follows the typical the 3-tier architecture of decoupling presentation, business logic, and data. Like any other web server, SPAPI presents RESTful endpoints with GET and PUT methods and JSON payloads/responses. In the logic and data layers, however, it differs from the average web server in important ways. First, the typical web server may access data from a database, but `data' for SPAPI is vehicle state information like speed or climate, which are managed by in-vehicle control and monitoring applications. Second, these in-vehicle applications are distributed across several Electronic Control Units (ECUs), interconnected on Controller Area Network (CAN) links. Thus, while the typical web server may access data by executing database queries, SPAPI accesses data by exchanging CAN signals\footnote{A CAN signal is a pre-defined typed quantity sent through a CAN message} with in-vehicle applications. Third, since SPAPI is primarily a gateway, the logic for each endpoint is relatively lean -- it maps API attributes and values into CAN signals and values, before sending them to necessary control applications. Finally, as also shown in Figure \ref{fig:api-3demos}, we focus upon testing SPAPI in a rig, and not in the real vehicle. In the test rig, vehicle state is emulated by a software virtual vehicle (VV) system. Thus, unlike many other API testing settings, VV offers the advantage of being able to freely mock vehicle state. \looseness=-1
+
+For example, the server exposes a \texttt{/speed} API with a GET method that allows a client to read the speed of the vehicle. A client in this case could be an app deployed in an in-vehicle Android tablet. When this client invokes this method, the server picks up the value of a \texttt{VehicleSpeed} CAN signal\footnote{A CAN signal is a pre-defined typed quantity sent through a CAN message} received from, say, a speed estimation application in a vehicle control ECU, and sends it in to the client in the GET response. The \texttt{VehicleSpeed} itself may have originally been estimated using multiple sensors that measure the vehicle speed. Another example is a \texttt{/climate} API with a PUT method that allows a client to adjust the climate settings like the temperature or air conditioning in the cab of the truck. When a client invokes this method to change, say, \texttt{acMode}, the server packs this request into an \texttt{ACModeRequest} CAN signal and sends it to a climate control ECU, which controls necessary actuators to change AC mode. These examples serve to highlight few important characteristics of the in-vehicle API server. 
+
+RESTful API testing constitutes a pivotal element in the realm of software development. It necessitates testers to possess a profound and comprehensive understanding of the relevant domain in order to develop effective test cases. This task becomes particularly intricate when testers are required to comprehend intricate systems such as the CAN signal, alongside mastering various complex systems. The efficacy of these test cases is heavily reliant on such background knowledge, posing a significant challenge for testers to encompass all potential scenarios across diverse APIs.
+ 
+The prevailing automated approaches for RESTful API testing are beset with numerous limitations. These include complexities in usage, challenges in maintenance and updates, a lack of flexibility, and a dependency on precise API documentation for effective test case generation. Furthermore, these methods do not support the incorporation of external knowledge, thereby impacting their overall effectiveness.  
+
+Large Language Models (LLMs) have demonstrated exceptional capabilities in reasoning and code generation. LLM agents can automate these testing tasks with a high degree of proficiency. They are adept at addressing issues using natural language processing, providing robust solutions to the tasks at hand. Additionally, LLM agents offer the flexibility to be seamlessly integrated with external tools, enhancing their functionality and applicability in RESTful API testing.
+
+The SEAPITester must comprehend the definitions of objects within a Swagger file by integrating external knowledge sources, such as CAN signals, and proprietary libraries like 'vv'. Furthermore, it is essential for the SEAPITester to possess the capability to write API test scripts. These scripts are instrumental in generating test case codes tailored for various endpoints. Add examples.
+
+The inherent limitation of Large Language Models (LLMs) is their lack of training on specific knowledge domains, such as the contents of Swagger files and the CAN signals definitions. This raises a critical question: How can we efficiently retrieve and integrate this external domain-specific knowledge into the learning process of an agent?
+
+The test codes generated by our model exhibit significant differences compared to those written by humans. This discrepancy poses a challenge in evaluating the efficacy of our model. Therefore, it is imperative to establish a robust evaluation framework that accurately assesses the quality and functionality of the generated test codes.
+
+Solution approach: Finish all test tasks including test case generation, test execution, and result analysis automatically using a task solving agent. Agent uses LLM for reasoning and is provided with abilities to access info about CAN signals and the private libraries.
+
+\section{Research Questions}
+
+\subsection{RQ 1: What are the effective design and operational strategies for agent-based systems in automated API testing and how do they compare to manual approaches?}
+
+\begin{itemize}
+    \item What is a viable architecture for constructing these agents?
+    \item What is a viable means for tasking these agents?
+    \item What is a viable planning and acting mechanism to achieve the objective of set tasks?
+    \item How does an agent-based automatic mechanism compare qualitatively to the manual testing approach?
+\end{itemize}
+
+\subsection{RQ2: What are the comprehensive requirements and strategies for agents with the necessary knowledge and tools to effectively conduct testing?}
+\begin{itemize}
+    \item What kind of external knowledge and tools are necessary for testing?
+    \item What are efficient means for providing agents access to required knowledge and tools?
+\end{itemize}
+
+\subsection{RQ 3: What are the effective methodologies for assessing the quality and correctness of automatically generated test cases?}
+\begin{itemize}
+    \item What is a viable mechanism for evaluating the executability (e.g. syntax errors) of automatically generated test cases?
+    \item What is a viable mechanism for checking if generated test cases accurately reflect the requirement?
+    \item -	What is a viable mechanism for checking if the execution results (pass/fail/error) of generated test cases are interpreted correctly?
+\end{itemize}
+
+The three main components of SPAPI testing are the server, vehicle state system, and VV system. Correspondingly, system information, CAN signal specifications and mocking documentation are needed to be retrieved. 
+
+When testing an attribute, the corresponding values should be looked up in both the CAN signal and VV tables. For example, our goal is to set the vehicle's status to \texttt{ECONOMY}.
+First, we locate the relevant attribute \texttt{acMode} in the system documentation \( S \). 
+Then, we look up \texttt{acMode} in the CAN signal table \( S' \) and find its corresponding value for \texttt{ECONOMY}, which might be 1. 
+We then transmit this information to the VV system via the CAN signal. 
+Subsequently, in the VV system, we read the corresponding CAN signal and look up the VV table $S^{\prime \prime}$ to find the value of the \texttt{acMode} under the \texttt{ECONOMY} state, which might be 2. Finally, we set the value of \texttt{acMode} to 2 in the VV system.
+Finally, the \texttt{acMode} in the VV system is set to 2 to achieve the desired vehicle state of \texttt{ECONOMY}.
+
+
+\textbf{Information organizing:}
+In automotive systems, to transmit signals via CAN and utilize VV system correctly, we need to ensure that each attribute and its corresponding value in the system document $\mathcal{S} = \{(k_i, v_i)\}_{i=1}^N$ can be looked up in the CAN signal specifications for getting $\mathcal{S'} = \{(k'_i, v'_i)\}_{i=1}^{N'}$. 
+Simultaneously, each attribute and its value in $\mathcal{S'}$ should be looked up in the mocking documentations to get $\mathcal{S^{\prime \prime}} = \{(k^{\prime \prime}_i, v^{\prime \prime}_i)\}_{i=1}^{N^{*}}$. Formally, our goal is to find a mapping such that:
+
+This ensures that every key $k_i$ from $\mathcal{S}$ maps to a corresponding key in $\mathcal{S'}$ and every key $k_i'$ from $\mathcal{S'}$ maps to a corresponding key in \( \mathcal{S^{\prime \prime}} \).
+
+However, these three components are developed by different teams, and the corresponding document table may not match exactly, e.g. the names of the attributes in each table may not be consistent since some attributes is recorded using a mixture of natural language and formal language. Table~\ref{table:examples2} summarizes 5 common types of records with different forms. 
+Besides, there can be discrepancies in the number of values for an attribute. For example, the \texttt{acMode} attribute may have two states, \texttt{STANDARD} and \texttt{ECONOMY}, in the system document, but there are 3 modes (also \texttt{TURBO}) in the CAN signal specification. In such cases, it is also needed to match the values with equivalent meanings.
+Moreover, there are instances of missing attributes, where a corresponding mapping key cannot be found. 
+Since such issues are diverse and irregular, testers need to carry out such fuzzy matching cautiously based on their own knowledge and experience.
+
+\begin{table}[h]
+  \centering
+  \caption{5 types of problems that require fuzzy matching.}
+  \begin{tabular}{|c|c|c|}
+  \hline
+  \multirow{2}{*}{\centering \textbf{Category}} & \multicolumn{2}{|c|}{\textbf{Example}} \\
+  \cline{2-3}
+   & \textbf{Key 1} & \textbf{Key 2} \\
+  \hline
+  Spelling errors & \textit{DriverTimeSetting} & \textit{DriverTimeSeting} \\
+  \hline
+  Abbreviations & \textit{standard} & \textit{STD} \\
+  \hline
+  Similar writing formats & \textit{standard\_mode} & \textit{STANDARDMODE} \\
+  \hline
+  Logical equivalents & \textit{OFF} & \textit{NOT\_ON} \\
+  \hline
+  Semantic equivalents & \textit{AutoStart} & \textit{AutoLaunch} \\
+  \hline
+  \end{tabular}
+  \label{table:examples2}
+\end{table}
+
+Based on the organized information, testers can write reasonable and comprehensive test cases. 
+Specifically, the two main methods of a vehicle API, PUT and GET, need to be tested separately. The PUT method is used to set the car's state, while the GET method is used to retrieve the car's current state.
+To verify the effectiveness of the PUT method, we set the car's state to \( S \) using the PUT method and then check whether all the virtual vehicle's states $S^{*}$ in the VV system are as expected.
+
+
+To verify whether the GET method is valid, we directly call the GET method to retrieve the car's current states, and check if the retrieved states \( S \) match the expected states.
+
+
+The process of writing test cases requires testers to have a comprehensive understanding of the organized information and a background in computer science, such as ensuring the correctness of data types in test cases. In addition, testers need to consider all test situations consider as many test situations as possible to ensure high coverage of test cases.
+Finally, testers write the test code to execute the test cases. 
+
+Note, however, that it takes domain knowledge to know that this particular choice of AC settings is aimed for low power consumption. 
+
+
+
+
+\noindent\textbf{Lookup information} -- The tester begins by looking up an in-house information source $D_2$ that maps an API attribute key ($k_i$) like \texttt{acMode} to the corresponding CAN signal name ($k^\prime_i$) \texttt{APIACModeRqst}. They then proceed to look up another in-house source $D_3$ to map the API attribute value ($v_i$) \texttt{ECONOMY} to the corresponding CAN signal value ($v^\prime_i$) \texttt{1}. After these two lookup steps, testers successfully map API attribute-value pairs $(k_i, v_i)$ to CAN signal-value pairs $(k^\prime_i, v^\prime_i)$. As a final step, testers refer to information source $D_3$, which is the documentation of the mocking system VV, to map CAN signal-value pairs $(k^\prime_i, v^\prime_i)$ to VV state-value pairs $(k^{\prime \prime}_i, v^{\prime \prime}_i)=$ (\texttt{acmode\_rqst}, \texttt{1}). Having thus gone through four steps, and as many sources of documents, testers have completed the mapping exercise for one attribute-value pair. Of course, as shown below, they need to do this mapping exercise for all pairs in the object $S_E$ transacted by the endpoint $E$.\looseness=-1
+\begin{equation}
+  \begin{aligned}
+      \forall (k_i, v_i), \;  \exists (k_{j}^{'}, v_j^{'}) \in S^{'} \; &\text{where} \; (k_i, v_i) \rightarrow (k_{j}^{'}, v_j^{'}) \\
+      \forall (k_i^{'}, v_i^{'}), \;  \exists (k_{k}^{*}, v_k^{*}) \in S^{*} \; &\text{where} \;  (k_i^{'}, v_i^{'}) \rightarrow (k_{k}^{*}, v_k^{*})
+\end{aligned}
+\end{equation}
+
+A simple case can be seen in the \texttt{GetUnitFromAtribute} signature, where we include \texttt{output\_example}. Then, when invoking the LLM we plugin one or two output examples like \texttt{[}\texttt{\{} \texttt{"attr:"attrA"}, \texttt{"unit:"Seconds"}\texttt{\}}\texttt{]}, steering the LLM towards the output structure that we require. Note that unlike regular few-shot prompting where curated examples are shown, we use these examples as templates to (a) capture patterns in input and output, and (b) show how input patterns map to output patterns.
+
+\subsection{Effort needed to develop SPAPI-tester (RQ2)}
+\input{figures/rq2_prompt_ratio.tex}
+
+By any reasonable measure, a two-month timeline for going from idea to a highly functional automatic testing pipeline is short. Further, the fact that the pipeline was developed by a close-knit team of 2-3 FTEs (a similar size as the manual SPAPI tester team) indicates the efficacy of its architecture, design, and implementation choices. Note that we deliberately constituted a team that combines engineers who are familiar with SPAPI testing and those who are familiar with AI engineering. The combination of domain and AI knowledge played a crucial role in helping achieve targets in a short time frame. Figures \ref{fig:method-coverage} and Table \ref{table:rq1_result} illustrate the evolution of SPAPI-tester from an external perspective by focusing upon the coverage and quality of testing endpoints. Here, we delve into important measures that capture pipeline internals and highlight their influence in accelerating development.
+
+\subsubsection{LLM selectivity} As seen in Figure \ref{fig:rq2_prompt_ratio}, early implementations of SPAPI-tester used 4 LLM calls in its 4-module pipeline. In comparison, the total number of functions in the pipeline was 24. If we calculate the ratio of LLM calls to the total number of functions, we get a rough measure of how selective the pipeline is in using LLMs. As the figure shows, having only {17}\% functions use LLMs, SPAPI-tester started out by being highly selective in LLM use. As the pipeline matured, the number of LLM calls marginally increased to 6, while the total number of functions in the pipeline increased to 55, making the pipeline quite selective in the use of LLMs. LLM use is crucial for the pipeline, but keeping its use confined to a small proportion of functions helps us separate concerns. Strategies for LLM use like prompt engineering, repeated sampling, or consistency measurement, are now applicable only to a small proportion of functions. With a large part of the pipeline being regular functions, programming them is relatively straightforward, accelerating the pace of development. Note further that because of our use of an LLM programming model, LLM use is both selective and programmed. Thus, SPAPI-tester development bears the look and feel of a software development project, which provided an extra sense of familiarity, accelerating development.
+
+\subsubsection{Prompt template brevity} Though SPAPI-tester is highly selective in LLM use, engineering prompts for each of its calls was a significant pain point. Since it is well-known that LLM performance is sensitive to even individual prompt tokens, we took conscious measures to keep prompt templates as brief as possible. As seen in Figure \ref{fig:rq2_prompt_ratio}, in early implementations, the length of prompt template tokens\footnote{We used Tiktoken to tokenizer prompt templates and measured its length} peaked at $\sim$2.4k. Using a development culture of regularly monitoring prompt template lengths, by the time the implementation matured, we were able to reduce it by $\sim$50\%. Apart from a culture of prompt brevity, two other factors helped us reduce prompt template lengths -- format following LLMs, and the LLM programming model. These factors helped us remove prompt instructions related to the format. Using input and output types specified in its signatures, DSPy verbalizes them into the prompt, while format following LLMs align quite well with these instructions. Note, however, we do not necessarily pursue brevity in prompt templates as an inference cost saving measure. Brief prompt templates do not always translate into brief prompts. For instance, the average prompt length in the mature SPAPI-tester pipeline is {2148} tokens which is {2} times the prompt template length. In the code base, on the other hand, prompt template length is a very manageable $\sim$200 tokens per LLM call. Such brevity helped us put much more focus on programming and reduced the effort we spent on prompt engineering, accelerating development.
+
+\subsubsection{LLM flexibility} By using a modular design with selective, briefly prompt-templated, and well crafted LLM calls, SPAPI-tester is largely indifferent to the choice of LLMs. As seen in Table \ref{table:different_llm}, SPAPI-tester performance is not significantly affected by LLM choice. This gives us equal opportunity to use either a self-hosted LLaMA or a commercial GPT. Much more importantly, the design of the pipeline ensures that we are able to change LLMs with minimal effort. For instance, the intense period of SPAPI-tester development coincided with the release of LLaMA3.1. We were able to migrate SPAPI-tester to the new LLM painlessly with no porting effort. Such a high level of LLM flexibility helped us keep our focus on pipeline functionality, accelerating its development.
+
+Using these measures, treating the LLM as yet another programmable unit, we make SPAPI-tester a software development project with special characteristics. This proved to be helpful in an industrial software engineering setting, where vital stakeholders are familiar with this development paradigm.
+
+
+\subsection{The efficient of SPAPI-Tester (RQ2)}
+To validate the effectiveness of SPAPI-Tester in real-world applications, we conducted evaluations from two perspectives: system design and practical application.
+
+\subsubsection{System Design}
+
+\begin{table}[t]
+    \centering
+    \caption{Performance of SPAPI-Tester with different LLMs.}
+\begin{tabular}{|c|c|c|c|c|}
+    \hline
+    Type & LLaMA 3 & LLaMA 3.1 & GPT-3.5 & GPT-4o \\
+    \hline
+    OK & 0.472 & 0.428 & 0.480 & 0.459 \\
+    \hline
+    NOK & 0.294 & 0.365 & 0.304 & 0.333 \\
+    \hline
+    Doubts & 0.233 & 0.207 & 0.216 & 0.207\\
+    \hline
+\end{tabular}
+\label{table:different_llm}
+\end{table}
+
+To assess the impact of different LLMs on SPAPI-Tester's performance, we compared the outcomes using four distinct models, as presented in Table~\ref{table:different_llm}. Despite their performance on general tasks varies, the results show minimal variance in their performance when applied to SPAPI-Tester. This demonstrates that SPAPI-Tester does not heavily rely on the specific strengths of any particular LLM.
+
+A key advantage of our system design is that it eliminates the need to adjust prompts when switching between LLMs. This flexibility is achieved by decomposing the overall workflow, assigning specific, narrowly focused tasks to the LLMs rather than relying on them to perform complex, composite functions. This modular approach allows each LLM to concentrate on completing well-defined, straightforward tasks. Moreover, we have templatized examples in several modules, which enhances the system's stability.
+
+Additionally, we leveraged \texttt{jinja} templates to assist in code generation, ensuring that the LLMs were only responsible for generating test cases. This separation of concerns guarantees that the generated code is syntactically correct and executable. Notably, after a brief development phase, SPAPI-Tester was able to cover all 193 APIs, underscoring the system's robust compatibility and scalability.
+
+\subsubsection{Implementation}
+In implementation, we measured the change in the percentage of prompts during the development process. In practical use, reducing the time spent on crafting prompts correlates with greater system generalizability. We utilized DSPy to enhance the efficiency of prompt adjustments. To validate DSPy's effectiveness, we compared the ratio of prompt content to total code before and after implementing DSPy, as illustrated in Figure~\ref{fig:rq2_prompt_ratio}. The results show a significant reduction in prompt proportion following the introduction of DSPy.
+
+Each point on the graph represents a valid prompt optimization, clearly indicating that the combination of workflow decomposition and DSPy significantly shortened the prompt optimization cycle.
+
+Moreover, we tracked the number of DSPySignatures (i.e., LLM-driven functional components) over time. The data reveals that as we incorporated more LLM-driven functionalities, the proportion of prompt length relative to the total code continued to decrease. This trend suggests that as the workflow is decomposed, less effort is needed to manage the prompts, allowing for greater focus on optimizing the overall process. Consequently, SPAPI-Tester proves to be highly adaptable and easily adjustable for new tasks.
+
+
+
+% 插入表格，对比4个模型的结果。
+% llama 3 / llama 3.1 / GPT-3.5 / GPT-4o 
+
+
+% 对于JinJa的讨论
+% 我们使用了JinJa模板后，可以（1.使得Doubt的比例下降；2.提升了testable api的数量；3.skip property的数量变少了）
+
+
+
+\subsection{LLMs' ability of overcoming obstacles  (RQ3)}
+\textbf{Fuzzy matching} presents a significant challenge in automated API testing. We categorized common fuzzy matching examples into five classes, selecting 20 test samples per class, supplementing with manually written samples if needed. The results in Table~\ref{table:fuzzy_matching} (upper part) show that both models achieved high precision rates, indicating LLMs' capability to accurately identify and match fuzzy inputs, crucial for full automation. For \textit{semantic equivalents, logical equivalents, and similar writing formats}, both models attained an accuracy of 1.0 or nearly so, demonstrating their strong pattern matching abilities in semantics and logic.
+However, for \textit{spelling errors}, accuracy slightly dropped as some errors altered word semantics, like mistaking \texttt{date} for \texttt{data}. In the \textit{abbreviations} category, some abbreviations were too short to discern, complicating the matching process. These errors challenge even human judgment, resulting in a minor accuracy reduction. Overall, both models performed similarly, underscoring the robustness of LLMs in fuzzy matching tasks.
+
+For \textbf{inconsistent units}, we selected 200 samples containing this issue for experiment. The results in Table~\ref{table:fuzzy_matching} (lower part) indicate LLMs can achieve a high precision rate. However, the challenge lies in detecting inconsistencies in units. This difficulty arises mainly because some documentation explicitly annotates the unit for each attribute value, while others lack such annotations. In these cases, it becomes necessary to infer the units based on descriptions or other contextual information, which can affect the detection performance.
+
+\begin{table}[h]
+    \centering
+    \caption{Performance on different types of Fuzzy Matching (upper part) and Inconsistent Units (lower part).}
+    \begin{tabular}{|c|c|c|c|c|c|c|}
+    \hline
+    \multirow{2}{*}{\centering Type} & \multicolumn{3}{|c|}{GPT 3.5} & \multicolumn{3}{|c|}{LLaMA3} \\
+    \cline{2-7}
+     & \textbf{P} & \textbf{R} & \textbf{F1} & \textbf{P} & \textbf{R} & \textbf{F1} \\
+    \hline
+    Spelling errors & 0.89 & 0.76 & 0.82 & 0.92 & 0.73 & 0.81 \\
+    Abbreviations & 0.93 & 0.68 & 0.79 & 0.88 & 0.74 & 0.80 \\
+    Similar writing formats & 0.95 & 0.95 & 0.95 & 1.0 & 0.95 & 0.97 \\
+    Logical equivalents & 1.0 & 0.75 & 0.86 & 0.95 & 0.78 & 0.86 \\
+    Semantic equivalents & 1.0 & 0.70 & 0.82 & 1.0 & 0.73 & 0.84 \\
+    \hline
+    \textbf{Average} & \textbf{0.95} & \textbf{0.77} & \textbf{0.85} & \textbf{0.95} & \textbf{0.79} & \textbf{0.86} \\
+    \hline
+    \hline
+    \textbf{Inconsistent Units} & \textbf{0.95} & \textbf{0.67} & \textbf{0.79} & \textbf{0.95} & \textbf{0.59} & \textbf{0.73} \\
+    \hline
+    \end{tabular}
+    \label{table:fuzzy_matching}
+\end{table}
+
+Another significant challenge is \textbf{informal ambiguous cardinality}, for example, a single test case may match multiple values. We selected 100 representative test cases for our experiments. Each test case consists of two sets, and the objective is to map elements between the two sets as accurately and comprehensively as possible. Each set contains multiple (key, value) pairs. To increase the difficulty, we intentionally chose test examples with different numbers of elements in the two sets, ensuring that elements between the sets do not perfectly match. In such tasks, due to non-unique matches, recall rates can be floating.
+
+
+\begin{itemize}
+    \item In some test processes which are largely manual, testers mainly intervene to lend their judgement and not their creativity. This is especially the case when the tester is playing a glue role holding tools, systems, and stakeholders together. Under such conditions, completely automating the tester's glue role is necessary not only for engineering quality but also for engineering experience.
+    \item In a practical test process with several discrete manual steps, partial automation -- meaning, automating a subset of manual steps -- may only bring negligible gains. This calls for an all-or-nothing approach, requiring complete process automation to gain actual benefits.
+    \item A test process where the tester is playing a glue role, is quite often a legacy process which is prohibitively expensive to overhaul. A tester's primary job may simply be navigating all the debt that is incurred, which is suboptimal to both the tester and the organization. Here again, true benefits may only be gained if all the debt -- and not some fraction -- is overcome.    
+\end{itemize}
+
+\subsection{Larger implications}
+
+Using SPAPI testing as an example, we have described one instance of a testing process that is manual, tedious, and inefficient. While the domain plays a part, it is however clear that the underlying problems we describe are not unique to embedded or automotive software testing. Extrapolating experiences from this particular case, we make the following observations that are likely to apply to other software testing settings. \looseness=-1
+\begin{enumerate}
+  \item Fragmented information landscapes are common in software test settings, particularly those that involve integration of multiple systems. Due to any number of reasons -- prior design or investment choices, legacy, and domain specificity -- information fusion is difficult. In many such cases, organizations resort to manual intervention as glue.
+  \item Quite often the fragmented information landscape is mission critical, so organizations keep it functional. This ensures that dependent engineering processes remain operational and keep making deliveries. Fundamentally re-inventing the information landscape, or the test process, is technically difficult or economically infeasible.
+  \item The test process, as a result, continues to incur significant debt which is paid down using increased human involvement. This is neither efficient from the process perspective nor fair from the engineer's perspective.
+\end{enumerate}
+
+\subsection{Organizing principles}
+We approach the task of automating SPAPI testing by first laying down the following set of guiding principles.
+
+\begin{enumerate}
+    \item \textit{Maximize automation, tending towards full automation} -- In the current manual process used for testing SPAPI, two things are clear. First, the process involves several manual information lookup steps that mainly require human judgement and not creativity. The task itself, therefore presents a relatively low threshold for automation. Second, it is necessary to take an all-or-nothing approach because automating only a subset of manual steps is unlikely to bring overall benefits. Considering these two factors, we aim for full automation of the test process.
+    \item \textit{Reuse the process design} -- Though there are inefficiencies, the manual testing process is carefully designed. There is a clearly decomposed sequence of steps (see Figure \ref{fig:spapi-test-process}) that is both functional and proven in use. Further, the process design precisely identifies steps that require manual intervention. This prompts us to reuse the process and apply LLMs to automate discrete manual tasks. \looseness=-1
+    \item \textit{Automate by writing the test process as code} -- With the SPAPI testing team being the main end-users of the automatic pipeline, we consciously choose \textit{code} as the human-machine interface. We reuse the design to write the test process as code, making LLM calls when necessary, and relying on conventional automation otherwise. Writing the test workflow as code that seamlessly blends LLMs appears to the testing team as just another routine act of process automation. In addition to using LLMs, testers can continue using data and control flows to actively influence process execution and evolution.
+\end{enumerate}
+
+raises four possible categories of errors. In reverse order of modules, these are \texttt{TEST\_EXECUTION\_ERROR}, \texttt{TEST\_WRITING\_ERROR}, \texttt{OBJECT\_GEN\_ERROR}, and \texttt{LOOKUP\_ERROR}. Test execution error types are most numerous and many of them are related to test environment problems. These include errors in connecting, setting up and tearing down the test rig, issues connecting to the LLM, and core testing errors like assertion and endpoint state errors. Assertion errors in test execution are clearly the most serious and, given the design of SPAPI-tester is related more to the object generation module that generates test objects. The next most common error types are lookup errors. These are raised, when the lookup process fails to complete. In most cases, this is because documents miss mapping information. In other cases, this points to shortcomings in lookup module logic, and we use the error to improve it. The least numerous error types are those defined in test writing and object generation modules. We do not define may test writing errors because there are few possibilities of errors in the mature process of rendering a simple code template. Contrarily, errors in object generation are few because they are more difficult to define. On the one hand, given the design of DSPy signatures and functions in the lookup module, there are virtually no blatant errors in object generation. Especially when using more recent LLMs, there are hardly any issues in, say, conforming to types and formats that we define. On the other hand, given that LLMs choose test objects, there are higher chances of subtle errors in, say, the equivalence between API attribute-value and VV state-value pairs in generated objects. These errors are detectable only during test execution. While forthcoming sections use these error types to discuss SPAPI-tester performance, we highlight the granularity of error definition for three reasons. First, and of immediate utility, is that granular error types lead to detailed observability of different modules. This lets us handle routine development, design, and execution related issues, helping us progressively evolve SPAPI-tester. Second, granular error definitions helps break down the issues that arise when dealing with LLMs. The greatest concern when working with LLMs is, of course, its reliability. If well-defined DSPy signatures is one tool, well-defined error types is the other tool with which we decompose and diagnose LLM interactions, helping us build confidence in delegating responsibility to SPAPI-tester. Third, defining error types, DSPy signatures, and regular functions makes SPAPI-tester just another software development project. Unlike LLMs and generative AI, software development is much more familiar territory for SPAPI stakeholders. Framing even errors in LLM interaction as recognizable exceptions and errors makes SPAPI-tester more relatable to stakeholders.
+
+Having LLMs take over the glue role that testers perform manually is the very essence of SPAPI-tester. Without LLMs, one needs to either develop specific solutions for each problem in SPAPI testing, or rebuild everything from scratch, neither of which is easy. The flip-side, however, is that there is an explosion of LLM choices, and their capabilities are constantly evolving, which makes it difficult to make a stable choice. Here, our recipe of developing
+
+The third trait that we consider is inference speed. With SPAPI-tester being under constant development, we face the need to generate test cases for hundreds of endpoints on a regular basis.
+
+To maintain consistency of interaction, VV allows state $(k^{\prime \prime}_i, v^{\prime \prime}_i)$ to be accessed using the same CAN signal $(k^\prime_i, v^\prime_i)$ that SPAPI uses in the real vehicle.
+
+Note that coverage is largely an evaluation of whether the lookup module completes successfully. This is because if the lookup step completes, given the design of the pipeline, it is virtually guaranteed that a test case is written and executed.
+
+This means that the lookup module successfully navigates all three steps to map API attribute-value pairs to VV state-value pairs.
+
+\subsection{Environments Setup} 
+In this section, we describe our experimental setup. 
+
+\subsubsection{Subjects}
+
+We evaluated our automated API testing tool, SPAPI-Tester, on a dataset comprising 122 truck API endpoints developed by a leading vehicle manufacturer. The API documentation was authored by the corresponding API developers, while the CAN signal transmission protocols were established by a specialized team within the company. This team defined the attribute names and value types. The documentation for the virtual vehicles was provided by the Virtual Vehicle team.
+
+These 122 endpoints encompass 193 methods and 1,012 properties. Due to issues with the URL links, 22 of these endpoints were excluded from the testing process, leaving us with 100 functional endpoints for further evaluation. In terms of methods, we tested 148 in total, including common HTTP methods such as GET, PUT, POST, and DELETE. However, due to incomplete API documentation and the absence of corresponding CAN signal information in the database, some methods were subjected to black-box API testing. Ultimately, our tests covered 93 black-box APIs and 55 gray-box APIs. For the properties, we tested 814 out of the initial 1,012. We skipped 198 properties due to the lack of related documentation, which made it impossible to evaluate them effectively.
+
+
+For the experiments, we employed four representative models to ensure a comprehensive evaluation of SPAPI-Tester’s capabilities. These models included GPT-4o, released in May 2024; GPT-3.5 (version 2023-07-01-preview); LLaMA 3.1, released in July 2024; and LLaMA, released in April 2024. To enhance the robustness of the testing process and minimize prompt-induced variability, we integrated DSPy into the workflow. DSPy not only stabilized the overall process but also reduced the impact of prompt variability, leading to more reliable and consistent results.
+
+
+\subsubsection{Metrics}
+The effectiveness of SPAPI-Tester cannot be adequately gauged by the test pass rate alone. In the context of API testing, a passing result for an API without issues is expected and does not provide substantial insight. Conversely, an API that passes the test despite underlying issues is undesirable, as it signals a failure in the testing framework. The primary goal of SPAPI-Tester is to uncover bugs within the API, which should be evidenced by the API failing the generated test cases when defects are present.
+
+During our experimental evaluations, we encountered scenarios where certain failures were attributable to the testing environment itself rather than to the APIs under test. These instances were excluded from our statistical analysis to ensure the accuracy and relevance of the results.
+
+We categorize the test outcomes as follows:
+\begin{enumerate}
+    \item \texttt{OK}: The API successfully passes all generated test cases, with no issues detected. This outcome indicates that the API functions as expected.
+    \item \texttt{NOK}: The API fails the test cases, and genuine issues are identified within the API. This outcome suggests that the API contains bugs, correctly detected by SPAPI-Tester.
+    \item \texttt{Doubts}: The result is inconclusive, meaning that the automated tests cannot definitively determine whether the API is functioning correctly. In such cases, further investigation by API developers is required to verify the presence or absence of issues.
+\end{enumerate}
+
+By employing this classification, we aim to provide a more nuanced evaluation of SPAPI-Tester’s capabilities, focusing not only on test outcomes but also on the accuracy of bug detection and the reliability of the testing process.
+
+To thoroughly assess the performance of SPAPI-Tester, we deliberately selected a dataset with a balanced distribution of correct and faulty APIs, with approximately 50\% containing errors. This setup allowed for a fair evaluation of the system's capabilities. To further highlight the advantages of our approach, we compared SPAPI-Tester with the Raw Workflow, which represents the baseline method.
+
+In the \textbf{Raw Workflow}, no decomposition of tasks was performed. Instead, we relied on the LLM to handle a broad range of responsibilities simultaneously. For instance, in the documentation matching and organization stage, the LLM was required to match all content automatically, rather than focusing on specific bottlenecks. Similarly, during the test cases generation phase, the LLM was tasked with producing not only the test cases but also the test code in its entirety. 
+
+The results, shown in Table~\ref{table:rq1_result}, clearly demonstrate the superiority of SPAPI-Tester over the Raw Workflow. SPAPI-Tester achieved an accuracy of 87\% and an F1 score of 85.7\%, indicating its effectiveness in automatically detecting API issues.
+Furthermore, the accuracy of \texttt{fully covered} reached 91\%, while \texttt{partially covered} APIs yielded an accuracy of 80.95\%.
+These results suggest that more comprehensive API documentation leads to better performance of SPAPI-Tester.
+
+Moreover, SPAPI-Tester showed significant improvements over the baseline method. Unlike the Raw Workflow, where the LLM handled large, broad tasks, SPAPI-Tester broke the workflow into distinct phases. The LLM was assigned only to address specific bottlenecks in each step, allowing for optimized performance in each stage of the process. As a result, SPAPI-Tester was able to better leverage the LLM's strengths, significantly improving the automation of API testing.
+
+To assess the detection effectiveness of the mature development version of SPAPI-Tester, we conducted experiments on continuously evolving APIs. Since these APIs are under active development, we do not have ground truth regarding their correctness.
+
+We tested all available APIs and found that a total of 7 APIs reported errors during the testing process. 
+Among these, 3 were assertion errors, indicating that the APIs failed to pass the test cases. Upon investigation, we confirmed that these 3 APIs indeed contained bugs due to recent updates.
+Additionally, 2 errors were identified as test environment-related issues. For example, during testing, the RIG Virtual Truck can only communicate with one client at a time. If 2 or more users attempt to connect simultaneously, a CAN bus chain error—specifically, a BaseCanoeModuleException—is reported. After our testers received these results, they retested the 2 APIs individually, and both passed the tests.
+Furthermore, 2 errors initially remained unclassified. One was a StompListenerException, an exception occurring during message transmission. The other was an IndexError caused by an empty list in the API's response body, also resulting from a message transmission exception. After consulting with the development team, we created a new error category called "Transmission Error" to classify these types of issues.
+
+These results demonstrate our efficiency in detecting issues within new APIs. Firstly, SPAPI-Tester is highly stable and generates accurate test cases without errors. In tests covering approximately 200 APIs, no erroneous test cases were produced, which significantly reduces the false positive rate. Secondly, SPAPI-Tester classifies errors encountered during testing, allowing us to locate the root causes based on error types and determine whether they are internally caused by the API. Moreover, when we encounter previously unseen errors, we can easily add them as a new error category after identification, enabling us to pinpoint the causes of such errors in subsequent inspections. Therefore, SPAPI-Tester demonstrates strong extensibility.
+
+Testing SPAPI is the responsibility of a fourth team, which spends considerable effort reading and understanding three disparate documentation sets. Second, SPAPI is a heterogeneous system that gateways the `new' world of web applications with the `traditional' world of in-vehicle embedded systems replete with control systems, sensors, and actuators. There is stark difference between how each of these worlds describe their systems. For instance, SPAPI APIs follow the OpenAPI\footnote{https://www.openapis.org/} specification, making it both human and machine-readable. On the other hand, the corresponding vehicle states are documented using a mix of natural and formal languages in a diverse set of documents, forcing human intervention. Third, and perhaps most latent,
+
+Given an endpoint $E$ that transacts an object $S_E$, gray-box tests check whether a GET/PUT operation on the endpoint reflects the corresponding vehicle states $S^{\prime \prime}_E$ in the mocked VV system. This devolves into two tests.
+
+Since radically reinventing the process or the larger engineering ecosystem is technically difficult or economically infeasible, the process continues to incur debt, which is usually paid down using manual intervention.
+
+The resulting pipeline, we further show, detects a range of bugs in specification, documentation, and implementation, while also being transparent and extendable. 
+
+%DSPy also massively eases prompt engineering. Prompt templates are tedious and brittle to craft by hand, and long templates are difficult to maintain. Increased substitution of raw prompt templates with DSPy signatures was one important factor that accelerated SPAPI-tester development. 
+
+% \input{figures/api-can-mapping.tex}
+
+%\subsubsection{Repeated object generation for consistency} Once the lookup module uses its signatures and input-output templates to complete the lookup process, the object generation module takes over. It looks at all possible mappings between API properties and vehicle states to select API and VV test objects. In early implementations of SPAPI-tester, we used lookup results to create a distribution from which test objects are sampled. We soon found out, however, that different kinds of interdependencies challenges the construction of a unified distribution. For instance, there are dependencies within an API object where one property-value pair depends upon another. We saw an example previously, where setting the parking climate requires setting the vehicle state to parked. Further, there are also dependencies between API and VV objects -- unit scaling being a typical case -- that complicates sampling. Considering these difficulties, we began using LLMs for generating test objects. But, test object generation is an important step in the pipeline, and delegating this responsibility to an LLM raises concerns. To minimize the risk of LLM-induced errors in the pipeline, we take the simple step of generating multiple pairs of API-VV test objects and use each pair to write a test case. If there is considerable inconsistency in the results of these test cases, we raise a corresponding exception so that the endpoint and its test cases can be manually inspected. \textcolor{red}{Revisit this part}.
+
+
+%The primary difference between manual SPAPI testing and the automatic SPAPI-tester pipeline is that the latter overcomes the obstacles to automation listed in Section \ref{sec:obstacles-to-automation}. However, instead of dealing with each obstacle on an individual basis, the automatic pipeline delegates entire lookup steps to LLMs. SPAPI-tester uses 6 discrete LLM calls, 5 out of which are used in the lookup module. The one remaining call is used in the object generation module for generating test objects.
+
+% for instance, executes API to CAN signal lookup $(k_i, v_i) \rightarrow (k^\prime_i, v^\prime_i)$ in one step. This call (see Figure \ref{fig:signature-example} (a)) not only involves referring to three different documentation sources, but also needs to overcome all identified mapping obstacles. Using well-defined DSPy signatures and, more importantly, templatized examples (see Figure \ref{fig:signature-example}) the tedious and cognitively loaded lookup step is fully automated. Further, the API-CAN lookup is a general LLM call, used for testing 100\% of the methods. The other LLM lookup step which is similarly high-level and general is CAN-VV lookup $(k^\prime_i, v^\prime_i) \rightarrow (k^{\prime \prime}_i, v^{\prime \prime}_i)$.
+
