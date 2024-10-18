@@ -3,11 +3,15 @@ In this project, we aim to develop an intelligent data analysis platform GoNoGo 
 
 GoNoGo faces several challenges as follows.
 
-\textbf{1.} There is a significant lack of training data. Given that the input consists of natural language queries and the output is a structured analysis in the form of a table, constructing high-quality training datasets manually is both time-consuming and resource-intensive. Moreover, the accuracy of manually constructed datasets can be difficult to ensure, potentially leading to suboptimal model performance.
+% \textbf{1.} There is a significant lack of training data. Given that the input consists of natural language queries and the output is a structured analysis in the form of a table, constructing high-quality training datasets manually is both time-consuming and resource-intensive. Moreover, the accuracy of manually constructed datasets can be difficult to ensure, potentially leading to suboptimal model performance.
 
-\textbf{2.} Our database is highly dynamic, with constant updates and new content being added regularly. As a result, the LLM-based system must not only be able to adapt to the evolving data landscape but also generalize to new domain-specific information. This dynamic nature introduces a layer of complexity in maintaining the system's accuracy and relevance as the underlying data grows and shifts.
+\textbf{1.} One of the primary challenges is the heterogeneity between natural language queries and structured tabular data in the database. The system needs to accurately interpret user queries, which may refer to attributes in the database using slightly different terminology. For example, a query might ask for information on a column labeled "name," while the database contains this information under "names." Bridging this semantic gap requires advanced natural language processing (NLP) techniques to map query terms to corresponding table columns, ensuring accurate retrieval of relevant data and enhancing system adaptability.
 
-\textbf{3.} The real-world automotive context demands an exceptionally high degree of precision. Errors, such as hallucinations or inaccurate results, could have serious implications in critical decision-making processes. In the automotive industry, especially in safety-critical applications like autonomous driving or vehicle control systems, the margin for error is virtually nonexistent. Therefore, ensuring that the system provides reliable and accurate outputs is of utmost importance, requiring robust mechanisms to detect and prevent erroneous results. 
+\textbf{2.} Another challenge is ensuring the system can recognize and filter out irrelevant or non-actionable queries. To prevent the system from generating misleading or incorrect responses, it must identify queries that fall outside its operational scope and provide users with feedback on what kinds of questions are valid. This capability is essential for maintaining the system's reliability and guiding users toward effective interactions, minimizing the potential for confusion or errors during the decision-making process.
+
+\textbf{3.} Our database is highly dynamic, with constant updates and new content being added regularly. As a result, the LLM-based system must not only be able to adapt to the evolving data landscape but also generalize to new domain-specific information. This dynamic nature introduces a layer of complexity in maintaining the system's accuracy and relevance as the underlying data grows and shifts.
+
+\textbf{4.} The real-world automotive context demands an exceptionally high degree of precision. Errors, such as hallucinations or inaccurate results, could have serious implications in critical decision-making processes. In the automotive industry, especially in safety-critical applications like autonomous driving or vehicle control systems, the margin for error is virtually nonexistent. Therefore, ensuring that the system provides reliable and accurate outputs is of utmost importance, requiring robust mechanisms to detect and prevent erroneous results. 
 
 
 \vspace{2cm}
@@ -16,7 +20,8 @@ GoNoGo introduces several contributions.
 \textbf{1.} We have developed a novel sample generation method that automatically creates a diverse set of few-shot examples. These examples significantly enhance the performance of the system by providing richer training data compared to the original natural language queries. 
 % This approach minimizes the need for extensive manual data construction and improves the accuracy of query-to-result mapping.
 
-\textbf{2.} GoNoGo has been successfully deployed within a leading global automotive manufacturer, where it is currently in active use by approximately 200 engineers. This large-scale deployment demonstrates the robustness and scalability of our platform in a real-world industrial setting, showcasing its potential to streamline the software release process by automating complex data analysis tasks. By reducing manual effort and improving the precision of decision-making, our platform offers a transformative impact on automotive software development workflows.
+\textbf{2.} GoNoGo has been successfully deployed within a leading global automotive manufacturer, where it is currently in active use by approximately 200 people. This large-scale deployment demonstrates the robustness and scalability of our platform in a real-world industrial setting, showcasing its potential to streamline the software release process by automating complex data analysis tasks.
+%  By reducing manual effort and improving the precision of decision-making, our platform offers a transformative impact on automotive software development workflows.
 
 
 
